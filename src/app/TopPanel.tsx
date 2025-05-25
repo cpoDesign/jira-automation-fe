@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 
 function useRemoteSubscription() {
+  const { user } = useAuth();
   const [subscription, setSubscription] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -11,7 +12,10 @@ function useRemoteSubscription() {
       try {
         const res = await fetch(
           "https://jirabackendfunctions20250524235736.azurewebsites.net/api/subscription",
-          { credentials: "include" }
+          {
+            credentials: "include",
+            headers: user?.userId ? { "x-ms-client-principal-id": user.userId } : {},
+          }
         );
         if (!res.ok) throw new Error("Not authenticated");
         const data = await res.json();
@@ -23,7 +27,7 @@ function useRemoteSubscription() {
       }
     }
     fetchSubscription();
-  }, []);
+  }, [user]);
   return { subscription, loading };
 }
 
@@ -43,19 +47,35 @@ export default function TopPanel() {
       </div>
       <div className="flex items-center gap-4">
         {!authLoading && user && (
-          <span className="text-xs text-gray-700 dark:text-gray-200">{user.userName}</span>
+          <span className="text-xs text-gray-700 dark:text-gray-200">
+            {user.userName}
+          </span>
         )}
         {!authLoading && !user && (
-          <a href="/.auth/login/aad" className="text-sm text-blue-600 hover:underline">Sign in</a>
+          <a
+            href="/.auth/login/aad"
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Sign in
+          </a>
         )}
-        <Link href="/webhook" className="text-xs text-blue-600 hover:underline">Webhook Info</Link>
         {user && (
-          <Link href="/subscription" className="text-xs text-blue-600 hover:underline">
-            {subscription && subscription !== "Free" ? "Change subscription" : "Upgrade subscription"}
+          <Link
+            href="/subscription"
+            className="text-xs text-blue-600 hover:underline"
+          >
+            {subscription && subscription !== "Free"
+              ? "Change subscription"
+              : "Upgrade subscription"}
           </Link>
         )}
         {user && (
-          <Link href="/logout" className="text-xs text-gray-600 border border-gray-400 rounded px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-800">Sign out</Link>
+          <Link
+            href="/logout"
+            className="text-xs text-gray-600 border border-gray-400 rounded px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-800"
+          >
+            Sign out
+          </Link>
         )}
       </div>
     </header>

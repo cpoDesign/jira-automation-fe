@@ -14,7 +14,8 @@ export default function Logout() {
     if (params.get("done")) {
       router.replace("/");
     } else {
-      window.location.href = "/.auth/logout?post_logout_redirect_uri=/logout?done=1";
+      window.location.href =
+        "/.auth/logout?post_logout_redirect_uri=/logout?done=1";
     }
   }, [router]);
 

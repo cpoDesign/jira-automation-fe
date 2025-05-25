@@ -2,13 +2,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const principalHeader = req.headers.get("x-ms-client-principal");
   let principalId = undefined;
-  if (principalHeader) {
-    try {
-      const principal = JSON.parse(Buffer.from(principalHeader, "base64").toString("utf8"));
-      principalId = principal.userId;
-    } catch {}
+  // Only use the x-user-email header in production, not in dev
+  const userEmail = req.headers.get("x-user-email");
+  if (userEmail) {
+    principalId = userEmail;
   }
   if (!principalId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
