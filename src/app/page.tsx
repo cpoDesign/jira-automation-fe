@@ -5,20 +5,27 @@ import { useEffect, useState } from "react";
 import SubscriptionSelector from "./SubscriptionSelector";
 
 function useRemoteSubscription() {
-  const [subscription, setSubscription] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<{
+    subscriptionTier: string;
+    accountId: string;
+    isAccountHolder: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     async function fetchSubscription() {
       try {
+        // Get user email from localStorage or context if available
+        const userEmail = window.localStorage.getItem("userEmail");
         const res = await fetch(
           "https://jirabackendfunctions20250524235736.azurewebsites.net/api/subscription",
           {
             credentials: "include",
+            headers: userEmail ? { "x-ms-client-principal-id": userEmail } : {},
           }
         );
         if (!res.ok) throw new Error("Not authenticated");
         const data = await res.json();
-        setSubscription(data.subscriptionTier);
+        setSubscription(data);
       } catch {
         setSubscription(null);
       } finally {
@@ -48,7 +55,7 @@ export default function Home() {
             <span className="text-gray-500">Loading subscription...</span>
           ) : (
             <span className="text-green-700 dark:text-green-300 border border-green-600 rounded px-2 py-1 bg-green-50 dark:bg-green-900 ml-2">
-              Subscription: {subscription || "Free"}
+              Subscription: {subscription?.subscriptionTier || "Free"}
             </span>
           )}
         </div>
