@@ -13,7 +13,7 @@ export default function SubscriptionSelector({
   onSelect?: (id: string) => void;
 }) {
   const { plans } = useAvailableSubscriptions();
-  const { subscription, loading, reload } = useSubscription();
+  const { subscription, loading } = useSubscription();
   const { user } = useAuth();
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
