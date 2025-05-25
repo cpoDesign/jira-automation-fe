@@ -1,10 +1,6 @@
 // src/app/SubscriptionSelector.tsx
 "use client";
-import {
-  useAvailableSubscriptions,
-  useSubscription,
-  useAuth,
-} from "./auth-context";
+import { useAvailableSubscriptions, useSubscription } from "./auth-context";
 import React, { useState } from "react";
 
 export default function SubscriptionSelector({
@@ -14,9 +10,29 @@ export default function SubscriptionSelector({
 }) {
   const { plans } = useAvailableSubscriptions();
   const { subscription, loading } = useSubscription();
-  const { user } = useAuth();
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
+  // Extract accountId and user email from subscription and auth context
+  const accountId =
+    typeof subscription === "object" &&
+    subscription !== null &&
+    "accountId" in subscription
+      ? (subscription as { accountId: string }).accountId
+      : undefined;
+  const userEmail =
+    typeof subscription === "object" &&
+    subscription !== null &&
+    "isAccountHolder" in subscription &&
+    userEmailFromContext()
+      ? userEmailFromContext()
+      : undefined;
+
+  function userEmailFromContext() {
+    // Try to get user email from auth context if available
+    // (If you have a useAuth hook, import and use it here)
+    // For now, fallback to window.localStorage or similar if needed
+    return undefined; // Placeholder, update as needed
+  }
 
   if (loading) return <div>Loading plans...</div>;
   if (!plans) return <div>Failed to load plans.</div>;
@@ -32,7 +48,7 @@ export default function SubscriptionSelector({
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, accountId: user?.userId }),
+        body: JSON.stringify({ priceId, accountId, userEmail }),
       });
       const data = await res.json();
       if (data.url) {

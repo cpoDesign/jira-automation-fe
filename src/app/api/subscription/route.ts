@@ -11,12 +11,15 @@ export async function GET(req: NextRequest) {
   if (!principalId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const res = await fetch(process.env.NEXT_PUBLIC_FUNCTION_API + "/subscription", {
-    method: "GET",
-    headers: {
-      "x-ms-client-principal-id": principalId,
-    },
-  });
+  const res = await fetch(
+    process.env.NEXT_PUBLIC_FUNCTION_API + "/subscription",
+    {
+      method: "GET",
+      headers: {
+        "x-ms-client-principal-id": principalId,
+      },
+    }
+  );
   const data = await res.json();
   return NextResponse.json(data);
 }

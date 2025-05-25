@@ -32,7 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function fetchUser() {
       try {
         // Use local mock endpoint for local dev, real endpoint in production
-        const isDev = process.env.NEXT_PUBLIC_ENV === "development" || process.env.NODE_ENV === "development";
+        const isDev =
+          process.env.NEXT_PUBLIC_ENV === "development" ||
+          process.env.NODE_ENV === "development";
         const endpoint = isDev ? "/api/.auth/me" : "/.auth/me";
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error("Not authenticated");
@@ -80,10 +82,13 @@ export function useAuth() {
 export function useSubscription() {
   const [subscription, setSubscription] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   useEffect(() => {
     async function fetchSubscription() {
       try {
-        const res = await fetch("/api/subscription");
+        const res = await fetch("/api/subscription", {
+          headers: user?.email ? { "x-user-email": user.email } : {},
+        });
         if (!res.ok) throw new Error("Not authenticated");
         const data = await res.json();
         setSubscription(data.subscriptionTier);
@@ -94,7 +99,7 @@ export function useSubscription() {
       }
     }
     fetchSubscription();
-  }, []);
+  }, [user]);
   return { subscription, loading };
 }
 
