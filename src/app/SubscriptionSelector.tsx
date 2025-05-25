@@ -1,0 +1,54 @@
+// src/app/SubscriptionSelector.tsx
+"use client";
+import { useAvailableSubscriptions, useSubscription } from "./auth-context";
+import React, { useState } from "react";
+
+export default function SubscriptionSelector({ onSelect }: { onSelect?: (id: string) => void }) {
+  const { plans, loading } = useAvailableSubscriptions();
+  const { subscription } = useSubscription();
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
+
+  async function handleCheckout(priceId: string) {
+    setLoadingCheckout(true);
+    try {
+      // Call your backend to create a Stripe Checkout session
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId })
+      });
+      const data = await res.json();
+      if (data.url) {
+        setCheckoutUrl(data.url);
+        window.location.href = data.url;
+      }
+    } finally {
+      setLoadingCheckout(false);
+    }
+  }
+
+  if (loading) return <div>Loading plans...</div>;
+  if (!plans) return <div>Failed to load plans.</div>;
+  if (subscription && subscription !== "Free") return null;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <h2 className="text-lg font-bold mb-2">Choose a Subscription</h2>
+      {plans.map(plan => (
+        <button
+          key={plan.id}
+          className={`border rounded p-4 text-left ${subscription === plan.name ? "border-blue-600 bg-blue-50" : "border-gray-300"}`}
+          onClick={() => handleCheckout(plan.id)}
+          disabled={loadingCheckout}
+        >
+          <div className="font-semibold">{plan.name} {plan.price > 0 && (<span className="text-xs text-gray-500">${plan.price}/mo</span>)}</div>
+          <div className="text-sm text-gray-600">{plan.description}</div>
+        </button>
+      ))}
+      {checkoutUrl && (
+        <div className="text-blue-600 mt-2">Redirecting to checkout...</div>
+      )}
+    </div>
+  );
+}
