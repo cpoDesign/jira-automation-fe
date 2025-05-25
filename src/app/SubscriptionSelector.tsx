@@ -10,6 +10,9 @@ export default function SubscriptionSelector({ onSelect }: { onSelect?: (id: str
   const [loadingCheckout, setLoadingCheckout] = useState(false);
 
   async function handleCheckout(priceId: string) {
+    if (onSelect) {
+      onSelect(priceId);
+    }
     setLoadingCheckout(true);
     try {
       // Call your backend to create a Stripe Checkout session
