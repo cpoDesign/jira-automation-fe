@@ -55,7 +55,7 @@ export default function TopPanel() {
           </Link>
         )}
         {user && (
-          <a href="/.auth/logout" className="text-xs text-gray-600 border border-gray-400 rounded px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-800">Sign out</a>
+          <Link href="/logout" className="text-xs text-gray-600 border border-gray-400 rounded px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-800">Sign out</Link>
         )}
       </div>
     </header>
