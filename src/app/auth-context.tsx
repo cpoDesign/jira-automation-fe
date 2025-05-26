@@ -2,6 +2,7 @@
 // Simple Azure Static Web Apps Auth context for Next.js
 // This is a placeholder. In production, fetch from /.auth/me or use SWA Auth client SDK.
 import { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export type User = {
   userId: string;
@@ -157,4 +158,74 @@ export function useAvailableSubscriptions() {
     fetchPlans();
   }, []);
   return { plans, loading };
+}
+
+export type OrgSetup = {
+  orgName: string;
+  accessToken: string;
+  theme: string;
+  jiraUrl: string;
+};
+
+function encodeBase64(str: string) {
+  return typeof window !== "undefined" ? window.btoa(unescape(encodeURIComponent(str))) : "";
+}
+function decodeBase64(str: string) {
+  return typeof window !== "undefined" ? decodeURIComponent(escape(window.atob(str))) : "";
+}
+
+const OrgContext = createContext<{
+  org: OrgSetup | null;
+  setOrg: (org: OrgSetup) => void;
+  clearOrg: () => void;
+  getAccessToken: () => string | null;
+} | null>(null);
+
+export function OrgProvider({ children }: { children: React.ReactNode }) {
+  const [org, setOrgState] = useState<OrgSetup | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Load org setup from localStorage if available
+    const orgName = localStorage.getItem("orgName");
+    const accessTokenEncoded = localStorage.getItem("accessToken");
+    const theme = localStorage.getItem("theme") || "light";
+    const jiraUrl = localStorage.getItem("jiraUrl") || "";
+    if (orgName && accessTokenEncoded) {
+      setOrgState({ orgName, accessToken: decodeBase64(accessTokenEncoded), theme, jiraUrl });
+    }
+  }, []);
+
+  useEffect(() => {
+    // If not set, redirect to /configuration after auth
+    if (org === null && typeof window !== "undefined") {
+      router.replace("/configuration");
+    }
+  }, [org, router]);
+
+  const setOrg = (org: OrgSetup) => {
+    localStorage.setItem("orgName", org.orgName);
+    localStorage.setItem("accessToken", encodeBase64(org.accessToken));
+    localStorage.setItem("theme", org.theme);
+    setOrgState(org);
+  };
+  const clearOrg = () => {
+    localStorage.removeItem("orgName");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("theme");
+    setOrgState(null);
+  };
+  const getAccessToken = () => (org ? org.accessToken : null);
+
+  return (
+    <OrgContext.Provider value={{ org, setOrg, clearOrg, getAccessToken }}>
+      {children}
+    </OrgContext.Provider>
+  );
+}
+
+export function useOrg() {
+  const ctx = useContext(OrgContext);
+  if (!ctx) throw new Error("useOrg must be used within OrgProvider");
+  return ctx;
 }

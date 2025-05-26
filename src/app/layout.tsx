@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "./auth-context";
+import { AuthProvider, OrgProvider, useOrg } from "./auth-context";
 import TopPanel from "./TopPanel";
 import AppInsightsInit from "./AppInsightsInit";
 
@@ -32,8 +32,10 @@ export default function RootLayout({
       >
         <AppInsightsInit />
         <AuthProvider>
-          <TopPanel />
-          {children}
+          <OrgProvider>
+            <TopPanel />
+            {children}
+          </OrgProvider>
         </AuthProvider>
       </body>
     </html>
