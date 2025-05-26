@@ -1,44 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useSubscription } from "./auth-context";
 import SubscriptionSelector from "./SubscriptionSelector";
 
-function useRemoteSubscription() {
-  const [subscription, setSubscription] = useState<{
-    subscriptionTier: string;
-    accountId: string;
-    isAccountHolder: boolean;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    async function fetchSubscription() {
-      try {
-        // Get user email from localStorage or context if available
-        const userEmail = window.localStorage.getItem("userEmail");
-        const res = await fetch(
-          "https://jirabackendfunctions20250524235736.azurewebsites.net/api/subscription",
-          {
-            credentials: "include",
-            headers: userEmail ? { "x-ms-client-principal-id": userEmail } : {},
-          }
-        );
-        if (!res.ok) throw new Error("Not authenticated");
-        const data = await res.json();
-        setSubscription(data);
-      } catch {
-        setSubscription(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchSubscription();
-  }, []);
-  return { subscription, loading };
-}
-
 export default function Home() {
-  const { subscription, loading } = useRemoteSubscription();
+  const { subscription, loading } = useSubscription();
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">

@@ -1,39 +1,11 @@
 "use client";
-import { useAuth } from "./auth-context";
-import React, { useEffect, useState } from "react";
+import { useAuth, useSubscription } from "./auth-context";
+import React from "react";
 import Link from "next/link";
-
-function useRemoteSubscription() {
-  const { user } = useAuth();
-  const [subscription, setSubscription] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    async function fetchSubscription() {
-      try {
-        const res = await fetch(
-          "https://jirabackendfunctions20250524235736.azurewebsites.net/api/subscription",
-          {
-            credentials: "include",
-            headers: user?.userId ? { "x-ms-client-principal-id": user.userId } : {},
-          }
-        );
-        if (!res.ok) throw new Error("Not authenticated");
-        const data = await res.json();
-        setSubscription(data.subscriptionTier);
-      } catch {
-        setSubscription(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchSubscription();
-  }, [user]);
-  return { subscription, loading };
-}
 
 export default function TopPanel() {
   const { user, loading: authLoading } = useAuth();
-  const { subscription, loading: subLoading } = useRemoteSubscription();
+  const { subscription, loading: subLoading } = useSubscription();
 
   return (
     <header className="w-full bg-gray-100 dark:bg-gray-900 py-3 px-6 flex justify-between items-center border-b border-gray-200 dark:border-gray-800 gap-4">
@@ -41,7 +13,10 @@ export default function TopPanel() {
         <span className="font-bold text-lg">SaaS App</span>
         {!subLoading && (
           <span className="text-xs text-green-700 dark:text-green-300 border border-green-600 rounded px-2 py-1 bg-green-50 dark:bg-green-900">
-            Subscription: {subscription || "Free"}
+            Subscription:{" "}
+            {typeof subscription === "object" && subscription !== null
+              ? subscription.subscriptionTier
+              : subscription || "Free"}
           </span>
         )}
       </div>
@@ -64,7 +39,9 @@ export default function TopPanel() {
             href="/subscription"
             className="text-xs text-blue-600 hover:underline"
           >
-            {subscription && subscription !== "Free"
+            {typeof subscription === "object" &&
+            subscription !== null &&
+            subscription.subscriptionTier !== "Free"
               ? "Change subscription"
               : "Upgrade subscription"}
           </Link>
