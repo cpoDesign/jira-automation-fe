@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Configuration</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background: #f9f9f9;
+        margin: 0;
+      }
+      .container {
+        max-width: 400px;
+        margin: 40px auto;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px #0001;
+        padding: 2rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      label {
+        display: block;
+        margin: 1rem 0 0.25rem;
+      }
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      .actions {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+      }
+      button {
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #ccc;
+      }
+      .theme-switch {
+        margin: 1rem 0;
+        display: flex;
+        align-items: center;
+      }
+      .theme-switch input {
+        margin-right: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Organization Setup</h1>
+      <div class="theme-switch">
+        <input type="checkbox" id="theme" />
+        <label for="theme">Dark mode</label>
+      </div>
+      <label for="orgName">Organization Name</label>
+      <input id="orgName" type="text" placeholder="Organization Name" />
+      <label for="accessToken">Access Token</label>
+      <input id="accessToken" type="password" placeholder="Access Token" />
+      <div class="actions">
+        <button id="saveBtn" disabled>Save & Continue</button>
+      </div>
+    </div>
+    <script>
+      const orgNameInput = document.getElementById("orgName");
+      const accessTokenInput = document.getElementById("accessToken");
+      const saveBtn = document.getElementById("saveBtn");
+      const themeSwitch = document.getElementById("theme");
+      function updateBtn() {
+        saveBtn.disabled = !orgNameInput.value || !accessTokenInput.value;
+      }
+      orgNameInput.addEventListener("input", updateBtn);
+      accessTokenInput.addEventListener("input", updateBtn);
+      saveBtn.addEventListener("click", () => {
+        localStorage.setItem("orgName", orgNameInput.value);
+        localStorage.setItem("accessToken", accessTokenInput.value);
+        localStorage.setItem("theme", themeSwitch.checked ? "dark" : "light");
+        alert("Configuration saved. Proceeding...");
+      });
+      // Theme logic
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      const storedTheme =
+        localStorage.getItem("theme") || (prefersDark ? "dark" : "light");
+      themeSwitch.checked = storedTheme === "dark";
+      document.documentElement.classList.toggle("dark", storedTheme === "dark");
+      themeSwitch.addEventListener("change", () => {
+        const newTheme = themeSwitch.checked ? "dark" : "light";
+        localStorage.setItem("theme", newTheme);
+        document.documentElement.classList.toggle("dark", newTheme === "dark");
+      });
+    </script>
+  </body>
+</html>

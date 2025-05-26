@@ -2,6 +2,7 @@
 import { useAuth, useSubscription } from "./auth-context";
 import React from "react";
 import Link from "next/link";
+import ConfigurationPage from "./configuration/page";
 
 export default function TopPanel() {
   const { user, loading: authLoading } = useAuth();
@@ -44,6 +45,14 @@ export default function TopPanel() {
             subscription.subscriptionTier !== "Free"
               ? "Change subscription"
               : "Upgrade subscription"}
+          </Link>
+        )}
+        {user && (
+          <Link
+            href="/configuration"
+            className="text-xs text-blue-600 hover:underline"
+          >
+            Configuration
           </Link>
         )}
         {user && (

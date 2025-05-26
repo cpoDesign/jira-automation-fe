@@ -1,7 +1,9 @@
 // src/app/SubscriptionSelector.tsx
 "use client";
+import { Dela_Gothic_One } from "next/font/google";
 import { useAvailableSubscriptions, useSubscription } from "./auth-context";
 import React, { useState } from "react";
+import { trackEvent } from "./appinsights";
 
 export default function SubscriptionSelector({
   onSelect,
@@ -12,6 +14,8 @@ export default function SubscriptionSelector({
   const { subscription, loading } = useSubscription();
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
+  // Internal state to track if user canceled checkout
+  const [showSelector, setShowSelector] = useState(true);
   // Extract accountId and user email from subscription and auth context
   const accountId =
     typeof subscription === "object" &&
@@ -34,9 +38,23 @@ export default function SubscriptionSelector({
     return undefined; // Placeholder, update as needed
   }
 
+  React.useEffect(() => {
+    // If redirected back from Stripe and subscription is still Free, show the selector
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("canceled") && subscription && typeof subscription === "object" && subscription.subscriptionTier === "Free") {
+      setShowSelector(true);
+    }
+    // Optionally, clear the canceled param from the URL
+    if (params.has("canceled")) {
+      params.delete("canceled");
+      window.history.replaceState({}, document.title, window.location.pathname + (params.toString() ? `?${params}` : ''));
+    }
+  }, [subscription]);
+
   if (loading) return <div>Loading plans...</div>;
   if (!plans) return <div>Failed to load plans.</div>;
-  if (subscription && subscription !== "Free") return null;
+  if (subscription && typeof subscription === "object" && subscription.subscriptionTier !== "Free") return null;
+  if (!showSelector) return null;
 
   async function handleCheckout(priceId: string) {
     if (onSelect) {
@@ -44,15 +62,19 @@ export default function SubscriptionSelector({
     }
     setLoadingCheckout(true);
     try {
+      const payload = JSON.stringify({ priceId, accountId, userEmail });
+      trackEvent("StripeCheckoutSessionStart", { priceId, accountId, userEmail });
       // Call your backend to create a Stripe Checkout session
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, accountId, userEmail }),
+        body: payload,
       });
       const data = await res.json();
+      trackEvent("StripeCheckoutSessionResponse", { response: data });
       if (data.url) {
         setCheckoutUrl(data.url);
+        setShowSelector(false); // Hide selector on redirect
         window.location.href = data.url;
       }
     } finally {
@@ -67,7 +89,7 @@ export default function SubscriptionSelector({
         <button
           key={plan.id}
           className={`border rounded p-4 text-left ${
-            subscription === plan.name
+            typeof subscription === "object" && subscription !== null && subscription.subscriptionTier === plan.name
               ? "border-blue-600 bg-blue-50"
               : "border-gray-300"
           }`}
