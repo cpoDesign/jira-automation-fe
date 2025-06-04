@@ -1,5 +1,7 @@
 // src/app/api/subscription/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { SubscriptionService, OpenAPI } from "@/api/generated";
+import { getApiBaseOrThrow } from "./getApiBaseOrThrow";
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,28 +14,14 @@ export async function GET(req: NextRequest) {
     if (!principalId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!process.env.NEXT_PUBLIC_FUNCTION_API) {
-      return NextResponse.json(
-        { error: "Backend API URL not configured" },
-        { status: 500 }
-      );
-    }
-    const res = await fetch(
-      process.env.NEXT_PUBLIC_FUNCTION_API + "/subscription",
-      {
-        method: "GET",
-        headers: {
-          "x-ms-client-principal-id": principalId,
-        },
-      }
-    );
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: `Backend error: ${res.status}` },
-        { status: res.status }
-      );
-    }
-    const data = await res.json();
+    // Use the shared function to get and validate the API base
+    const apiBase = await getApiBaseOrThrow();
+    OpenAPI.BASE = apiBase;
+    OpenAPI.HEADERS = {
+      "x-ms-client-principal-id": principalId,
+    };
+    // Call the generated SubscriptionService
+    const data = await SubscriptionService.getSubscription();
     return NextResponse.json(data);
   } catch (err) {
     return NextResponse.json(

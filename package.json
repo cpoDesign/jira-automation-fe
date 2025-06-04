@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate:api": "openapi-typescript-codegen --input https://jirabackendfunctions20250524235736.azurewebsites.net/api/swagger.json --output src/api/generated --client fetch"
   },
   "dependencies": {
     "@microsoft/applicationinsights-web": "^3.3.8",
@@ -19,8 +20,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cypress": "^14.4.1",
     "eslint": "^9",
     "eslint-config-next": "15.1.8",
+    "openapi-typescript": "^7.8.0",
+    "openapi-typescript-codegen": "^0.29.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"

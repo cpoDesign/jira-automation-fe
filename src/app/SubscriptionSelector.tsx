@@ -1,17 +1,49 @@
 // src/app/SubscriptionSelector.tsx
 "use client";
-import { Dela_Gothic_One } from "next/font/google";
-import { useAvailableSubscriptions, useSubscription } from "./auth-context";
-import React, { useState } from "react";
+import { useSubscription, useAuth } from "./auth-context";
+import React, { useState, useEffect } from "react";
 import { trackEvent } from "./appinsights";
+
+function useAvailableSubscriptions() {
+  const [plans, setPlans] = useState<Array<{
+    id: string;
+    name: string;
+    price: number;
+    description: string;
+  }> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const headers: Record<string, string> = {};
+        if (user?.email) {
+          headers["x-user-email"] = user.email;
+        }
+        const res = await fetch("/api/subscriptions", { headers });
+        if (!res.ok) throw new Error("Failed to fetch plans");
+        const data = await res.json();
+        setPlans(data);
+      } catch {
+        setPlans(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPlans();
+  }, [user]);
+  return { plans, loading };
+}
 
 export default function SubscriptionSelector({
   onSelect,
 }: {
   onSelect?: (id: string) => void;
 }) {
-  const { plans } = useAvailableSubscriptions();
-  const { subscription, loading } = useSubscription();
+  const { plans, loading } = useAvailableSubscriptions();
+  const { subscription } = useSubscription();
+  const { user } = useAuth();
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   // Internal state to track if user canceled checkout
@@ -23,37 +55,38 @@ export default function SubscriptionSelector({
     "accountId" in subscription
       ? (subscription as { accountId: string }).accountId
       : undefined;
-  const userEmail =
-    typeof subscription === "object" &&
-    subscription !== null &&
-    "isAccountHolder" in subscription &&
-    userEmailFromContext()
-      ? userEmailFromContext()
-      : undefined;
-
-  function userEmailFromContext() {
-    // Try to get user email from auth context if available
-    // (If you have a useAuth hook, import and use it here)
-    // For now, fallback to window.localStorage or similar if needed
-    return undefined; // Placeholder, update as needed
-  }
+  const userEmail = user?.email;
 
   React.useEffect(() => {
     // If redirected back from Stripe and subscription is still Free, show the selector
     const params = new URLSearchParams(window.location.search);
-    if (params.has("canceled") && subscription && typeof subscription === "object" && subscription.subscriptionTier === "Free") {
+    if (
+      params.has("canceled") &&
+      subscription &&
+      typeof subscription === "object" &&
+      subscription.subscriptionTier === "Free"
+    ) {
       setShowSelector(true);
     }
     // Optionally, clear the canceled param from the URL
     if (params.has("canceled")) {
       params.delete("canceled");
-      window.history.replaceState({}, document.title, window.location.pathname + (params.toString() ? `?${params}` : ''));
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname + (params.toString() ? `?${params}` : "")
+      );
     }
   }, [subscription]);
 
   if (loading) return <div>Loading plans...</div>;
   if (!plans) return <div>Failed to load plans.</div>;
-  if (subscription && typeof subscription === "object" && subscription.subscriptionTier !== "Free") return null;
+  if (
+    subscription &&
+    typeof subscription === "object" &&
+    subscription.subscriptionTier !== "Free"
+  )
+    return null;
   if (!showSelector) return null;
 
   async function handleCheckout(priceId: string) {
@@ -63,9 +96,13 @@ export default function SubscriptionSelector({
     setLoadingCheckout(true);
     try {
       const payload = JSON.stringify({ priceId, accountId, userEmail });
-      trackEvent("StripeCheckoutSessionStart", { priceId, accountId, userEmail });
+      trackEvent("StripeCheckoutSessionStart", {
+        priceId,
+        accountId,
+        userEmail,
+      });
       // Call your backend to create a Stripe Checkout session
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: payload,
@@ -89,7 +126,9 @@ export default function SubscriptionSelector({
         <button
           key={plan.id}
           className={`border rounded p-4 text-left ${
-            typeof subscription === "object" && subscription !== null && subscription.subscriptionTier === plan.name
+            typeof subscription === "object" &&
+            subscription !== null &&
+            subscription.subscriptionTier === plan.name
               ? "border-blue-600 bg-blue-50"
               : "border-gray-300"
           }`}

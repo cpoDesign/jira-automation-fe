@@ -4,11 +4,11 @@ export async function GET() {
   // Simulate a fake authenticated user for local development
   return NextResponse.json({
     clientPrincipal: {
-      userId: "fake-user-id",
-      userDetails: "fakeuser@example.com",
+      userId: "avel.svarc@icloud.com",
+      userDetails: "pavel.svarc@icloud.com",
       identityProvider: "aad",
       userRoles: ["authenticated"],
-      access_token: "fake-access-token"
-    }
+      access_token: "fake-access-token",
+    },
   });
 }

@@ -2,7 +2,7 @@
 // Simple Azure Static Web Apps Auth context for Next.js
 // This is a placeholder. In production, fetch from /.auth/me or use SWA Auth client SDK.
 import { createContext, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { SubscriptionService, OpenAPI } from "@/api/generated";
 
 export type User = {
   userId: string;
@@ -82,13 +82,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Subscription fetch logic (only if user is present)
         setSubscriptionLoading(true);
         if (nextUser) {
-          const subRes = await fetch("/api/subscription", {
-            headers: nextUser.email ? { "x-user-email": nextUser.email } : {},
-          });
-          if (subRes.ok) {
-            const subData = await subRes.json();
+          try {
+            // Set the base URL for the generated API client
+            OpenAPI.BASE =
+              process.env.NEXT_PUBLIC_FUNCTION_API ||
+              "https://jirabackendfunctions20250524235736.azurewebsites.net/api";
+            OpenAPI.HEADERS = {
+              "x-ms-client-principal-id": nextUser.email,
+            };
+            // Use the generated SubscriptionService to get subscription
+            const subData = await SubscriptionService.getSubscription();
             setSubscription(subData);
-          } else {
+          } catch {
             setSubscription(null);
           }
         } else {
@@ -125,41 +130,6 @@ export function useSubscription() {
   return useContext(SubscriptionContext);
 }
 
-export function useAvailableSubscriptions() {
-  const [plans, setPlans] = useState<Array<{
-    id: string;
-    name: string;
-    price: number;
-    description: string;
-  }> | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchPlans() {
-      try {
-        const res = await fetch(
-          "https://jirabackendfunctions20250524235736.azurewebsites.net/api/stripe/subscriptions",
-          {
-            headers: {
-              Origin: window.location.origin,
-            },
-            // mode: "cors" // (default for cross-origin fetch)
-          }
-        );
-        if (!res.ok) throw new Error("Failed to fetch plans");
-        const data = await res.json();
-        setPlans(data);
-      } catch {
-        setPlans(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchPlans();
-  }, []);
-  return { plans, loading };
-}
-
 export type OrgSetup = {
   orgName: string;
   accessToken: string;
@@ -168,10 +138,14 @@ export type OrgSetup = {
 };
 
 function encodeBase64(str: string) {
-  return typeof window !== "undefined" ? window.btoa(unescape(encodeURIComponent(str))) : "";
+  return typeof window !== "undefined"
+    ? window.btoa(unescape(encodeURIComponent(str)))
+    : "";
 }
 function decodeBase64(str: string) {
-  return typeof window !== "undefined" ? decodeURIComponent(escape(window.atob(str))) : "";
+  return typeof window !== "undefined"
+    ? decodeURIComponent(escape(window.atob(str)))
+    : "";
 }
 
 const OrgContext = createContext<{
@@ -183,7 +157,6 @@ const OrgContext = createContext<{
 
 export function OrgProvider({ children }: { children: React.ReactNode }) {
   const [org, setOrgState] = useState<OrgSetup | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     // Load org setup from localStorage if available
@@ -192,16 +165,14 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     const theme = localStorage.getItem("theme") || "light";
     const jiraUrl = localStorage.getItem("jiraUrl") || "";
     if (orgName && accessTokenEncoded) {
-      setOrgState({ orgName, accessToken: decodeBase64(accessTokenEncoded), theme, jiraUrl });
+      setOrgState({
+        orgName,
+        accessToken: decodeBase64(accessTokenEncoded),
+        theme,
+        jiraUrl,
+      });
     }
   }, []);
-
-  useEffect(() => {
-    // If not set, redirect to /configuration after auth
-    if (org === null && typeof window !== "undefined") {
-      router.replace("/configuration");
-    }
-  }, [org, router]);
 
   const setOrg = (org: OrgSetup) => {
     localStorage.setItem("orgName", org.orgName);
