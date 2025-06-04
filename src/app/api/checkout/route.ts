@@ -5,7 +5,6 @@ import { getApiBaseOrThrow } from "../subscription/getApiBaseOrThrow";
 
 export async function POST(req: NextRequest) {
   try {
-    debugger;
     const { priceId, accountId, userEmail } = await req.json();
     if (!userEmail || !accountId) {
       return NextResponse.json(
@@ -22,8 +21,6 @@ export async function POST(req: NextRequest) {
     };
 
     console.log(userEmail, accountId, priceId);
-    debugger;
-    debugger;
     const data = await SubscriptionService.createCheckoutSession({
       priceId,
       accountId,

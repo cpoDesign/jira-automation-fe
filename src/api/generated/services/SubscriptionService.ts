@@ -47,7 +47,6 @@ export class SubscriptionService {
   public static createCheckoutSession(
     body: stripeCheckoutRequest
   ): CancelablePromise<any> {
-    debugger;
     if (!body.priceId || !body.accountId || !body.email) {
       throw new Error("Missing priceId, accountId, or invalid product");
     }
